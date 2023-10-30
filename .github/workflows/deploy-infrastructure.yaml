@@ -1,10 +1,10 @@
-name: Connect to an AWS role from a GitHub repository
+name: Deploy Infrastructure
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    types:
+      - opened
+      - synchronize
 
 env:
   AWS_REGION: ${{ secrets.AWS_SSO_REGION }}
@@ -13,16 +13,13 @@ permissions:
   contents: read
 
 jobs:
-  AssumeRoleAndCallIdentity:
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
+  DeployInfrastructure:
     runs-on: ubuntu-latest
     steps:
       - name: Git clone the repository
         uses: actions/checkout@v3
 
-      - name: configure aws credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: ${{ secrets.AWS_ROLE }}
@@ -33,7 +30,7 @@ jobs:
         run: |
           aws s3 ls
           echo ${{ secrets.AWS_ROLE }}
-      #
+
       - name: Copy terraform.tfvars from S3 to production folder
         run: |
           aws s3 cp s3://terraform-config-cloud-resume/terraform.tfvars ./environments/production/
@@ -60,5 +57,11 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color -out=tfplan
+        working-directory: ./environments/production
+        continue-on-error: true
+
+      - name: Terraform Apply
+        if: github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.pull_request.base.ref == 'main'
+        run: terraform apply -no-color tfplan
         working-directory: ./environments/production
         continue-on-error: true
