@@ -20,6 +20,8 @@ module "s3" {
   source      = "../../modules/s3"
   aws_region  = var.aws_region
   bucket_name = var.bucket_name
+  account_id = var.account_id
+  cloudfront_distribution_id = var.cloudfront_distribution_id
 
 }
 

@@ -10,6 +10,17 @@ variable "bucket_name" {
   sensitive   = true
 }
 
+variable "cloudfront_distribution_id" {
+  description = "The ID of the CloudFront distribution"
+  type        = string
+}
+
+variable "account_id" {
+  description = "The AWS Account ID"
+  type        = string
+}
+
+
 # cloudfront 
 
 variable "aliases" {
