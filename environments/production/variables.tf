@@ -88,6 +88,11 @@ variable "table_name" {
   type        = string
   sensitive   = true
 }
+variable "unique_table_name" {
+  description = "Table name for unique visitors"
+  type        = string
+  sensitive   = true
+}
 variable "billing_mode" {
   description = "Billing mode for the table"
   type        = string

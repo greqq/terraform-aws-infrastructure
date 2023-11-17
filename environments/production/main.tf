@@ -59,6 +59,13 @@ module "dynamodb_state" {
   billing_mode     = var.billing_mode
 }
 
+module "dynamodb_unique_visits" {
+  source           = "../../modules/dynamodb_unique_visits"
+  aws_region       = var.aws_region
+  unique_table_name = var.unique_table_name
+  billing_mode     = var.billing_mode
+}
+
 module "lambda" {
   source           = "../../modules/lambda"
   function_name    = var.function_name
