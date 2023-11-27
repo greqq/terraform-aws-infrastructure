@@ -60,10 +60,10 @@ module "dynamodb_state" {
 }
 
 module "dynamodb_unique_visits" {
-  source           = "../../modules/dynamodb_unique_visits"
-  aws_region       = var.aws_region
+  source            = "../../modules/dynamodb_unique_visits"
+  aws_region        = var.aws_region
   unique_table_name = var.unique_table_name
-  billing_mode     = var.billing_mode
+  billing_mode      = var.billing_mode
 }
 
 module "lambda" {
@@ -84,4 +84,23 @@ module "api_gateway" {
   path_part                 = var.path_part
   output_api_endpoint_value = var.output_api_endpoint_value
 
+}
+
+module "monitoring" {
+  source                          = "../../modules/monitoring"
+  function_name                   = var.function_name
+  lambda_errors_alarm_name        = var.lambda_errors_alarm_name
+  lambda_errors_alarm_period      = var.lambda_errors_alarm_period
+  lambda_errors_alarm_threshold   = var.lambda_errors_alarm_threshold
+  lambda_errors_alarm_description = var.lambda_errors_alarm_description
+  lambda_errors_email_endpoint    = var.lambda_errors_email_endpoint
+  lambda_alerts_topic_policy      = var.lambda_alerts_topic_policy
+  lambda_alerts_topic_name        = var.lambda_alerts_topic_name
+  billing_alerts_topic_name       = var.billing_alerts_topic_name
+  billing_alert_name              = var.billing_alert_name
+  billing_alert_period            = var.billing_alert_period
+  billing_alert_threshold         = var.billing_alert_threshold
+  billing_alert_description       = var.billing_alert_description
+  billing_alerts_topic_policy     = var.billing_alerts_topic_policy
+  billing_alerts_email_endpoint   = var.billing_alerts_email_endpoint
 }
