@@ -96,15 +96,11 @@ module "monitoring" {
   lambda_errors_email_endpoint    = var.lambda_errors_email_endpoint
   lambda_alerts_topic_policy      = var.lambda_alerts_topic_policy
   lambda_alerts_topic_name        = var.lambda_alerts_topic_name
+  billing_alerts_topic_name       = var.billing_alerts_topic_name
   billing_alert_name              = var.billing_alert_name
   billing_alert_period            = var.billing_alert_period
   billing_alert_threshold         = var.billing_alert_threshold
   billing_alert_description       = var.billing_alert_description
   billing_alerts_topic_policy     = var.billing_alerts_topic_policy
   billing_alerts_email_endpoint   = var.billing_alerts_email_endpoint
-  billing_alerts_topic_name       = var.billing_alerts_topic_name
-
-
-
-
 }
