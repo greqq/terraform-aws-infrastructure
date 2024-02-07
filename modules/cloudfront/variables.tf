@@ -18,32 +18,23 @@ variable "price_class" {
   type        = string
 }
 
-variable "origin_domain_name" {
-  description = "Domain name for the origin"
-  type        = string
-}
-
-variable "origin_id" {
-  description = "ID for the origin"
-  type        = string
-}
-
-variable "origin_access_control_id" {
-  description = "Access control ID for the origin"
-  type        = string
-}
-
-variable "target_origin_id" {
-  description = "Target origin ID for the cache behavior"
-  type        = string
-}
-
-variable "cache_policy_id" {
-  description = "Cache policy ID for the cache behavior"
-  type        = string
-}
-
 variable "minimum_protocol_version" {
   description = "Minimum protocol version for the viewer certificate"
   type        = string
+}
+
+variable "bucket_name" {
+  description = "Name of the S3 bucket"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS Region"
+  type        = string
+}
+
+variable "environment_type" {
+  description = "The deployment environment (e.g., 'dev', 'prod')"
+  type        = string
+  default     = "prod"
 }

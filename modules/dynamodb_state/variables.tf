@@ -1,8 +1,3 @@
-variable "aws_region" {
-  description = "AWS Region for the resources"
-  type     = string 
-}
-
 variable "state_table_name" {
   description = "Table name"
   type        = string

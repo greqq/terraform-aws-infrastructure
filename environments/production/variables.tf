@@ -10,16 +10,11 @@ variable "bucket_name" {
   sensitive   = true
 }
 
-variable "cloudfront_distribution_id" {
-  description = "The ID of the CloudFront distribution"
+# cert
+variable "domain_name" {
+  description = "The domain name for the ACM certificate"
   type        = string
 }
-
-variable "account_id" {
-  description = "The AWS Account ID"
-  type        = string
-}
-
 
 # cloudfront 
 
@@ -29,11 +24,6 @@ variable "aliases" {
   sensitive   = true
 }
 
-variable "acm_certificate_arn" {
-  description = "ACM Certificate ARN"
-  type        = string
-  sensitive   = true
-}
 
 variable "cloudfront_comment" {
   description = "Comment for the CloudFront distribution"
@@ -45,35 +35,6 @@ variable "price_class" {
   type        = string
 }
 
-variable "origin_domain_name" {
-  description = "Domain name for the origin"
-  type        = string
-  sensitive   = true
-}
-
-variable "origin_id" {
-  description = "ID for the origin"
-  type        = string
-  sensitive   = true
-}
-
-variable "origin_access_control_id" {
-  description = "Access control ID for the origin"
-  type        = string
-  sensitive   = true
-}
-
-variable "target_origin_id" {
-  description = "Target origin ID for the cache behavior"
-  type        = string
-  sensitive   = true
-}
-
-variable "cache_policy_id" {
-  description = "Cache policy ID for the cache behavior"
-  type        = string
-  sensitive   = true
-}
 
 variable "minimum_protocol_version" {
   description = "Minimum protocol version for the viewer certificate"
@@ -83,12 +44,12 @@ variable "minimum_protocol_version" {
 
 # dynamodb
 
-variable "table_name" {
+variable "visitor_counter_table_name" {
   description = "Table name"
   type        = string
   sensitive   = true
 }
-variable "unique_table_name" {
+variable "unique_visitor_table_name" {
   description = "Table name for unique visitors"
   type        = string
   sensitive   = true
@@ -133,15 +94,6 @@ variable "lambda_invoke_arn" {
   default     = "default:arn"
 }
 
-# variable "lambda_default_arn" {
-#   description = "The default ARN to be used for invoking the lambda function from the API Gateway."
-#   type        = string
-# }
-
-variable "output_api_endpoint_value" {
-  description = "Endpoint value for the API"
-  type        = string
-}
 
 #lambda 
 variable "function_name" {
@@ -174,6 +126,12 @@ variable "role_path" {
   type        = string
 }
 
+variable "environment_type" {
+  description = "The deployment environment (e.g., 'dev', 'prod')"
+  type        = string
+  default     = "prod"
+}
+
 # lambda alarms
 variable "lambda_errors_alarm_name" {
   description = "Name of the Lambda errors alarm"
@@ -200,10 +158,6 @@ variable "lambda_alerts_topic_name" {
   type        = string
 }
 
-variable "lambda_alerts_topic_policy" {
-  description = "Policy for the Lambda alerts topic"
-  type        = string
-}
 
 variable "lambda_errors_email_endpoint" {
   description = "Email endpoint for Lambda errors"
@@ -232,11 +186,6 @@ variable "billing_alert_description" {
 
 variable "billing_alerts_topic_name" {
   description = "Name for the billing alerts topic"
-  type        = string
-}
-
-variable "billing_alerts_topic_policy" {
-  description = "Policy for the billing alerts topic"
   type        = string
 }
 

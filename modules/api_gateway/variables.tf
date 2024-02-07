@@ -1,8 +1,3 @@
-variable "aws_region" {
-  description = "AWS Region for the resources"
-  type     = string 
-}
-
 variable "api_name" {
   description = "Name for the API Gateway REST API"
   type        = string
@@ -15,10 +10,18 @@ variable "path_part" {
 
 variable "lambda_invoke_arn" {
   description = "The ARN to be used for invoking the lambda function from the API Gateway."
-  type = string
-}
-
-variable "output_api_endpoint_value" {
-  description = "Endpoint value for the API"
   type        = string
 }
+
+
+variable "function_name" {
+  description = "Name of the Lambda function"
+  type        = string
+}
+
+variable "environment_type" {
+  description = "The deployment environment (e.g., 'dev', 'prod')"
+  type        = string
+  default     = "prod"
+}
+

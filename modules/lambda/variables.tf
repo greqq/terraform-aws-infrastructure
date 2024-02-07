@@ -27,3 +27,23 @@ variable "role_path" {
   description = "Path for the IAM role"
   type        = string
 }
+
+variable "environment_type" {
+  description = "The deployment environment (e.g., 'dev', 'prod')"
+  type        = string
+  default     = "prod"
+}
+
+variable "visitor_counter_table_name" {
+  description = "The name of the DynamoDB table for visitor counter"
+  type        = string
+  default     = "VisitorCounter"
+}
+
+variable "unique_visitor_table_name" {
+  description = "The name of the DynamoDB table for unique visitors"
+  type        = string
+  default     = "UniqueVisitors"
+}
+
+
