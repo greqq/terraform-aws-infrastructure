@@ -1,12 +1,9 @@
-provider "aws" {
-  region  = var.aws_region
-}
-
 resource "aws_s3_bucket" "terraform_state_webflow" {
-  bucket = var.state_bucket_name
+  bucket        = var.state_bucket_name
+  force_destroy = true
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 

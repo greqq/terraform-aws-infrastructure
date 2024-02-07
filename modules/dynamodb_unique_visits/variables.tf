@@ -1,9 +1,4 @@
-variable "aws_region" {
-  description = "AWS Region for the resources"
-  type     = string 
-}
-
-variable "unique_table_name" {
+variable "unique_visitor_table_name" {
   description = "Table name"
   type        = string
 }

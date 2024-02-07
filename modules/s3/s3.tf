@@ -1,33 +1,32 @@
-provider "aws" {
-  region  = var.aws_region
-}
+data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "webflow_projects_assets" {
-  bucket = var.bucket_name
-  force_destroy = false 
+  bucket        = var.bucket_name
+  force_destroy = true
+}
 
+
+resource "aws_s3_object" "index_html" {
+  depends_on   = [aws_s3_bucket.webflow_projects_assets]
+  bucket       = var.bucket_name
+  key          = "index.html"
+  content_type = "text/html"
+  content      = <<-EOF
+    <html>
+    <head><title>Website Under Construction</title></head>
+    <body>
+      <h1>Under Construction</h1>
+    </body>
+    </html>
+  EOF
 }
 
 resource "aws_s3_bucket_policy" "webflow_s3_bucket_policy" {
   bucket = aws_s3_bucket.webflow_projects_assets.id
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "AllowCloudFrontServicePrincipal"
-        Effect    = "Allow"
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
-        }
-        Action   = "s3:GetObject"
-        Resource = "arn:aws:s3:::${var.bucket_name}/*",
-        Condition = {
-          StringEquals = {
-            "AWS:SourceArn" = "arn:aws:cloudfront::${var.account_id}:distribution/${var.cloudfront_distribution_id}"
-          }
-        }
-      },
-    ]
+  policy = templatefile("../../modules/s3/s3_bucket_policy.tpl", {
+    bucket_name                = var.bucket_name
+    account_id                 = data.aws_caller_identity.current.account_id
+    cloudfront_distribution_id = var.cloudfront_distribution_id
   })
 }

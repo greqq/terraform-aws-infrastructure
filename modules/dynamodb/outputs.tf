@@ -3,7 +3,7 @@ output "dynamodb_table_arn" {
   value       = aws_dynamodb_table.visitor_counter_table.arn
 }
 
-output "table_name" {
+output "visitor_counter_table_name" {
   value       = aws_dynamodb_table.visitor_counter_table.name
   description = "The name of the DynamoDB table"
 }

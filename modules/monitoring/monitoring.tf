@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 resource "aws_cloudwatch_metric_alarm" "lambda_errors_alarm" {
   alarm_name                = var.lambda_errors_alarm_name
   comparison_operator       = "GreaterThanThreshold"
@@ -26,7 +28,14 @@ resource "aws_sns_topic" "lambda_alerts" {
   http_success_feedback_sample_rate        = 0
   lambda_success_feedback_sample_rate      = 0
   sqs_success_feedback_sample_rate         = 0
-  policy                                   = var.lambda_alerts_topic_policy
+}
+
+resource "aws_sns_topic_policy" "lambda_alerts_policy" {
+  arn = aws_sns_topic.lambda_alerts.arn
+  policy = templatefile("../../modules/monitoring/sns_policy_template.tpl", {
+    aws_account_id = data.aws_caller_identity.current.account_id,
+    sns_topic_arn  = aws_sns_topic.lambda_alerts.arn
+  })
 }
 
 resource "aws_sns_topic_subscription" "lambda_errors_email" {
@@ -63,7 +72,14 @@ resource "aws_sns_topic" "billing_alerts" {
   http_success_feedback_sample_rate        = 0
   lambda_success_feedback_sample_rate      = 0
   sqs_success_feedback_sample_rate         = 0
-  policy                                   = var.billing_alerts_topic_policy
+}
+
+resource "aws_sns_topic_policy" "billing_alerts_policy" {
+  arn = aws_sns_topic.billing_alerts.arn
+  policy = templatefile("../../modules/monitoring/sns_policy_template.tpl", {
+    aws_account_id = data.aws_caller_identity.current.account_id,
+    sns_topic_arn  = aws_sns_topic.billing_alerts.arn
+  })
 }
 
 resource "aws_sns_topic_subscription" "billing_alerts_email" {
@@ -71,3 +87,4 @@ resource "aws_sns_topic_subscription" "billing_alerts_email" {
   protocol  = "email"
   endpoint  = var.billing_alerts_email_endpoint
 }
+

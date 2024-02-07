@@ -23,11 +23,6 @@ variable "lambda_alerts_topic_name" {
   type        = string
 }
 
-variable "lambda_alerts_topic_policy" {
-  description = "Policy for the Lambda alerts topic"
-  type        = string
-}
-
 variable "lambda_errors_email_endpoint" {
   description = "Email endpoint for Lambda errors"
   type        = string
@@ -63,10 +58,6 @@ variable "billing_alerts_topic_name" {
   type        = string
 }
 
-variable "billing_alerts_topic_policy" {
-  description = "Policy for the billing alerts topic"
-  type        = string
-}
 
 variable "billing_alerts_email_endpoint" {
   description = "Email endpoint for billing alerts"
