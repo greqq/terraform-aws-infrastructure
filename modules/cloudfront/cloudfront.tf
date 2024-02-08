@@ -6,7 +6,7 @@ resource "aws_cloudfront_origin_access_control" "my_oac" {
 }
 
 resource "aws_cloudfront_cache_policy" "my_cache_policy" {
-  name    = "Managed-CachingOptimized" #prefix ${var.name_prefix} change to dev
+  name    = var.environment_type == "prod" ? "Managed-CachingOptimized" : "Dev-CachingOptimized"
   comment = "Policy with caching enabled. Supports Gzip and Brotli compression."
   parameters_in_cache_key_and_forwarded_to_origin {
 
@@ -61,10 +61,10 @@ resource "aws_cloudfront_distribution" "webflow_cloudfront_distribution" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = var.acm_certificate_arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = var.minimum_protocol_version
-    #cloudfront_default_certificate = "true" enable for dev
+    cloudfront_default_certificate = var.environment_type == "dev" ? true : false
+    acm_certificate_arn      = var.environment_type == "prod" ? var.acm_certificate_arn : null
+    ssl_support_method       = var.environment_type == "prod" ? "sni-only" : null
+    minimum_protocol_version = var.environment_type == "prod" ? var.minimum_protocol_version : null
   }
 
   restrictions {

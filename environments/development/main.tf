@@ -37,6 +37,7 @@ module "cloudfront" {
   aws_region               = var.aws_region
   price_class              = var.price_class
   minimum_protocol_version = var.minimum_protocol_version
+  environment_type         = var.environment_type
 }
 
 module "dynamodb" {
