@@ -53,13 +53,16 @@ module "dynamodb_unique_visits" {
 }
 
 module "lambda" {
-  source           = "../../modules/lambda"
-  function_name    = var.function_name
-  handler          = var.handler
-  s3_bucket_lambda = var.s3_bucket_lambda
-  s3_key_lambda    = var.s3_key_lambda
-  role_name        = var.role_name
-  role_path        = var.role_path
+  source                     = "../../modules/lambda"
+  function_name              = var.function_name
+  handler                    = var.handler
+  s3_bucket_lambda           = var.s3_bucket_lambda
+  s3_key_lambda              = var.s3_key_lambda
+  role_name                  = var.role_name
+  role_path                  = var.role_path
+  visitor_counter_table_name = var.visitor_counter_table_name
+  unique_visitor_table_name  = var.unique_visitor_table_name
+  environment_type           = var.environment_type
 }
 
 module "api_gateway" {
