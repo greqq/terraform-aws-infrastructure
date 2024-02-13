@@ -1,0 +1,303 @@
+name: Build Infrastructure
+
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+  workflow_dispatch:
+
+permissions:
+    id-token: write
+    contents: read
+
+jobs:
+  dev-build-and-deploy:
+    if: github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    steps:
+        # Checkout the Next.js app repository
+        - name: Checkout Next.js app
+          uses: actions/checkout@v3
+  
+        # Checkout the Resume repository
+        - name: Checkout Resume Repository
+          uses: actions/checkout@v3
+          with:
+            repository: greqq/cloud-resume
+            path: resume-repo
+  
+        # Checkout the lambda repository
+        - name: Checkout Lambda Repository
+          uses: actions/checkout@v3
+          with:
+            repository: greqq/aws-cloud-resume-lambda
+            path: lambda-repo
+  
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE_DEV }}
+            role-session-name: GitHub_to_AWS_via_FederatedOIDC
+            aws-region: ${{ secrets.AWS_REGION }}
+  
+        # Run Terraform 
+        - name: Copy terraform.tfvars from S3 to development folder
+          run: |
+            aws s3 cp s3://dev-terraform-config-cloud-resume/terraform.tfvars ./environments/development/
+            aws s3 cp s3://dev-terraform-config-cloud-resume/backend.conf ./environments/development/
+  
+        - uses: hashicorp/setup-terraform@v2
+  
+        - name: Terraform fmt
+          id: fmt
+          run: terraform fmt -check
+          working-directory: ./environments/development
+          continue-on-error: true
+  
+        - name: Terraform Init
+          id: init
+          run: terraform init -backend-config=backend.conf
+          working-directory: ./environments/development
+  
+        - name: Terraform Validate
+          id: validate
+          run: terraform validate -no-color
+          working-directory: ./environments/development
+  
+        - name: Terraform Plan
+          id: plan
+          run: terraform plan -no-color -out=tfplan
+          working-directory: ./environments/development
+  
+        - name: Terraform Apply
+          run: terraform apply -no-color tfplan
+          working-directory: ./environments/development
+  
+        - name: Get S3 Bucket Name from Terraform Outputs
+          run: |
+            cd ./environments/development
+            BUCKET_NAME=$(terraform-bin output -raw s3_bucket_name)
+            echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+  
+        # Get the CloudFront Distribution ID from Terraform outputs
+        - name: Get CloudFront Distribution ID
+          run: echo "CLOUDFRONT_ID=$(terraform-bin output -raw cloudfront_distribution_id)" >> $GITHUB_ENV
+          working-directory: ./environments/development
+  
+         # Get the Get invoke API url from terraform
+        - name: Get Invoke API Url from Terraform
+          run: echo "PUBLIC_API_URL=$(terraform-bin output -raw dev_api_invoke_url)" >> $GITHUB_ENV
+          working-directory: ./environments/development
+  
+          # Set NEXT_PUBLIC_API_URL using PUBLIC_API_URL
+        - name: Set Next.js API URL
+          run: echo "NEXT_PUBLIC_API_URL=$PUBLIC_API_URL" >> $GITHUB_ENV
+          working-directory: ./environments/development
+        
+        # Run Next.js 
+        - name: Set up Node.js
+          uses: actions/setup-node@v3
+          with:
+            node-version: "18"
+  
+        - name: Install dependencies
+          run: npm install
+          working-directory: ./resume-repo
+  
+        - name: Build Next.js app
+          run: npm run build
+          working-directory: ./resume-repo
+
+        - name: Export Next.js app
+          run: npm run export
+          working-directory: ./resume-repo
+            
+        - name: Install Syft
+          run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          working-directory: ./resume-repo
+    
+        - name: Generate SBOM
+          run: syft scan dir:./lambda-repo/increment_counter -o json > sbom.json
+          working-directory: ./
+        
+        - name: Install Grype
+          run: curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          working-directory: ./resume-repo
+  
+        - name: Scan for vulnerabilities
+          id: grype-scan
+          run: grype sbom:sbom.json
+          working-directory: ./
+  
+        - name: Fail if vulnerabilities are found
+          if: ${{ steps.grype-scan.outcome == 'failure' }}
+          run: exit 1
+          working-directory: ./resume-repo
+        
+        # Run Lambda
+        - name: Zip the Lambda function
+          run: zip -r object.zip .
+          working-directory: ./lambda-repo/increment_counter
+  
+        - name: Update Lambda function code
+          run: aws lambda update-function-code --function-name incrementCounterDev --zip-file fileb://lambda-repo/increment_counter/object.zip
+  
+        - name: Upload Website Files to S3
+          run: |
+            aws s3 sync ./out/ s3://$BUCKET_NAME/
+          working-directory: ./resume-repo
+
+        - name: Run Cypress tests
+          run: npx cypress run --env NEXT_PUBLIC_API_URL=$PUBLIC_API_URL
+          working-directory: ./resume-repo
+    
+        - name: Clear CDN Cache
+          run: |
+            aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
+  
+
+  prod-build-and-deploy:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    needs: dev-build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+        # Checkout the Next.js app repository
+        - name: Checkout Next.js app
+          uses: actions/checkout@v3
+  
+        # Checkout the Resume repository
+        - name: Checkout Resume Repository
+          uses: actions/checkout@v3
+          with:
+            repository: greqq/cloud-resume
+            path: resume-repo
+  
+        # Checkout the lambda repository
+        - name: Checkout Lambda Repository
+          uses: actions/checkout@v3
+          with:
+            repository: greqq/aws-cloud-resume-lambda
+            path: lambda-repo
+  
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE }}
+            role-session-name: GitHub_to_AWS_via_FederatedOIDC
+            aws-region: ${{ secrets.AWS_REGION }}
+  
+        - name: Copy terraform.tfvars from S3 to production folder
+          run: |
+            aws s3 cp s3://terraform-config-cloud-resume/terraform.tfvars ./environments/production/
+            aws s3 cp s3://terraform-config-cloud-resume/backend.conf ./environments/production/
+  
+        - uses: hashicorp/setup-terraform@v2
+  
+        - name: Terraform fmt
+          id: fmt
+          run: terraform fmt -check
+          working-directory: ./environments/production
+          continue-on-error: true
+  
+        - name: Terraform Init
+          id: init
+          run: terraform init -backend-config=backend.conf
+          working-directory: ./environments/production
+  
+        - name: Terraform Validate
+          id: validate
+          run: terraform validate -no-color
+          working-directory: ./environments/production
+  
+        - name: Terraform Plan
+          id: plan
+          run: terraform plan -no-color -out=tfplan
+          working-directory: ./environments/production
+  
+        - name: Terraform Apply
+          run: terraform apply -no-color tfplan
+          working-directory: ./environments/production
+  
+        - name: Get S3 Bucket Name from Terraform Outputs
+          run: |
+            BUCKET_NAME=$(terraform-bin output -raw s3_bucket_name)
+            echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+          working-directory: ./environments/production
+  
+        # Get the CloudFront Distribution ID from Terraform outputs
+        - name: Get CloudFront Distribution ID
+          run: echo "CLOUDFRONT_ID=$(terraform-bin output -raw cloudfront_distribution_id)" >> $GITHUB_ENV
+          working-directory: ./environments/production
+  
+         # Get the Get invoke API url from terraform
+        - name: Get Invoke API Url from Terraform
+          run: echo "PUBLIC_API_URL=$(terraform-bin output -raw dev_api_invoke_url)" >> $GITHUB_ENV
+          working-directory: ./environments/production
+  
+        - name: Set Next.js API URL
+          run: echo "NEXT_PUBLIC_API_URL=$PUBLIC_API_URL" >> $GITHUB_ENV
+          working-directory: ./environments/production
+  
+        # Run Next.js 
+        - name: Set up Node.js
+          uses: actions/setup-node@v3
+          with:
+            node-version: "18"
+  
+        - name: Install dependencies
+          run: npm install
+          working-directory: ./resume-repo
+  
+        - name: Build Next.js app
+          run: npm run build
+          working-directory: ./resume-repo
+
+        - name: Export Next.js app
+          run: npm run export
+          working-directory: ./resume-repo
+  
+        - name: Upload Website Files to S3
+          run: |
+            aws s3 sync ./out/ s3://$BUCKET_NAME/
+          working-directory: ./resume-repo
+  
+        # Run Lambda
+        - name: Zip the Lambda function
+          run: zip -r object.zip .
+          working-directory: ./lambda-repo/increment_counter
+  
+        - name: Update Lambda function code
+          run: aws lambda update-function-code --function-name incrementCounterDev --zip-file fileb://lambda-repo/increment_counter/object.zip
+  
+        - name: Clear CDN Cache
+          run: |
+            aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
+  
+
+  destroy-dev-environment:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:    
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE_DEV }}
+            role-session-name: GitHub_to_AWS_via_FederatedOIDC
+            aws-region: ${{ env.AWS_REGION }}
+  
+        # Run Terraform 
+        - name: Copy terraform.tfvars from S3 to development folder
+          run: |
+            aws s3 cp s3://dev-terraform-config-cloud-resume/terraform.tfvars ./environments/development
+            aws s3 cp s3://dev-terraform-config-cloud-resume/backend.conf ./environments/development
+  
+        - uses: hashicorp/setup-terraform@v2  
+
+        - name: Initialize Terraform
+          run: terraform init -backend-config=backend.conf
+          working-directory: ./environments/development
+
+        - name: Terraform Destroy
+          run: terraform destroy --auto-approve
+          working-directory: ./environments/development
+
+
