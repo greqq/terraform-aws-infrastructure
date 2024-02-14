@@ -11,23 +11,22 @@ permissions:
 
 jobs:
   dev-build-and-deploy:
-    if: github.event.pull_request.merged == false
     runs-on: ubuntu-latest
     steps:
         # Checkout the Next.js app repository
         - name: Checkout Next.js app
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
   
         # Checkout the Resume repository
         - name: Checkout Resume Repository
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             repository: greqq/cloud-resume
             path: resume-repo
   
         # Checkout the lambda repository
         - name: Checkout Lambda Repository
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             repository: greqq/aws-cloud-resume-lambda
             path: lambda-repo
@@ -45,7 +44,7 @@ jobs:
             aws s3 cp s3://dev-terraform-config-cloud-resume/terraform.tfvars ./environments/development/
             aws s3 cp s3://dev-terraform-config-cloud-resume/backend.conf ./environments/development/
   
-        - uses: hashicorp/setup-terraform@v2
+        - uses: hashicorp/setup-terraform@v3
   
         - name: Terraform fmt
           id: fmt
@@ -95,7 +94,7 @@ jobs:
         
         # Run Next.js 
         - name: Set up Node.js
-          uses: actions/setup-node@v3
+          uses: actions/setup-node@v4
           with:
             node-version: "18"
   
@@ -156,24 +155,24 @@ jobs:
   
 
   prod-build-and-deploy:
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     needs: dev-build-and-deploy
+    if: needs.dev-build-and-deploy.result == 'success'
     runs-on: ubuntu-latest
     steps:
         # Checkout the Next.js app repository
         - name: Checkout Next.js app
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
   
         # Checkout the Resume repository
         - name: Checkout Resume Repository
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             repository: greqq/cloud-resume
             path: resume-repo
   
         # Checkout the lambda repository
         - name: Checkout Lambda Repository
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             repository: greqq/aws-cloud-resume-lambda
             path: lambda-repo
@@ -190,7 +189,7 @@ jobs:
             aws s3 cp s3://terraform-config-cloud-resume/terraform.tfvars ./environments/production/
             aws s3 cp s3://terraform-config-cloud-resume/backend.conf ./environments/production/
   
-        - uses: hashicorp/setup-terraform@v2
+        - uses: hashicorp/setup-terraform@v3
   
         - name: Terraform fmt
           id: fmt
@@ -239,7 +238,7 @@ jobs:
   
         # Run Next.js 
         - name: Set up Node.js
-          uses: actions/setup-node@v3
+          uses: actions/setup-node@v4
           with:
             node-version: "18"
   
@@ -266,7 +265,7 @@ jobs:
           working-directory: ./lambda-repo/increment_counter
   
         - name: Update Lambda function code
-          run: aws lambda update-function-code --function-name incrementCounterDev --zip-file fileb://lambda-repo/increment_counter/object.zip
+          run: aws lambda update-function-code --function-name incrementCounter --zip-file fileb://lambda-repo/increment_counter/object.zip
   
         - name: Clear CDN Cache
           run: |
@@ -282,7 +281,7 @@ jobs:
           with:
             role-to-assume: ${{ secrets.AWS_ROLE_DEV }}
             role-session-name: GitHub_to_AWS_via_FederatedOIDC
-            aws-region: ${{ env.AWS_REGION }}
+            aws-region: ${{ secrets.AWS_REGION }}
   
         # Run Terraform 
         - name: Copy terraform.tfvars from S3 to development folder
@@ -290,7 +289,7 @@ jobs:
             aws s3 cp s3://dev-terraform-config-cloud-resume/terraform.tfvars ./environments/development
             aws s3 cp s3://dev-terraform-config-cloud-resume/backend.conf ./environments/development
   
-        - uses: hashicorp/setup-terraform@v2  
+        - uses: hashicorp/setup-terraform@v3  
 
         - name: Initialize Terraform
           run: terraform init -backend-config=backend.conf

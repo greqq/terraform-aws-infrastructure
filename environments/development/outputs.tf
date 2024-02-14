@@ -22,5 +22,6 @@ output "certificate_arn" {
 output "dev_api_invoke_url" {
   description = "The invoke URL for the development stage of the API Gateway"
   value       = "https://${module.api_gateway.rest_api_id}.execute-api.${var.aws_region}.amazonaws.com/dev/${var.path_part}"
+  sensitive   = true
 }
 
