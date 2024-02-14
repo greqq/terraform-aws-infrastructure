@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   dev-build-and-deploy:
+    if: github.event.pull_request.merged == false
     runs-on: ubuntu-latest
     steps:
         # Checkout the Next.js app repository
@@ -276,27 +277,36 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:    
-        - name: Configure AWS credentials
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            role-to-assume: ${{ secrets.AWS_ROLE_DEV }}
-            role-session-name: GitHub_to_AWS_via_FederatedOIDC
-            aws-region: ${{ secrets.AWS_REGION }}
-  
-        # Run Terraform 
-        - name: Copy terraform.tfvars from S3 to development folder
-          run: |
-            aws s3 cp s3://dev-terraform-config-cloud-resume/terraform.tfvars ./environments/development
-            aws s3 cp s3://dev-terraform-config-cloud-resume/backend.conf ./environments/development
-  
-        - uses: hashicorp/setup-terraform@v3  
+      # Checkout the Resume repository
+      - name: Checkout Resume Repository
+        uses: actions/checkout@v4
+        with:
+          repository: greqq/terraform-aws-infrastructure
+          path: iac-repo
 
-        - name: Initialize Terraform
-          run: terraform init -backend-config=backend.conf
-          working-directory: environments/development
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_DEV }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ secrets.AWS_REGION }}
 
-        - name: Terraform Destroy
-          run: terraform destroy --auto-approve
-          working-directory: environments/development
+      # Run Terraform 
+      - name: Copy terraform.tfvars from S3 to development folder
+        run: |
+          aws s3 cp s3://dev-terraform-config-cloud-resume/terraform.tfvars ./iac-repo/environments/development
+          aws s3 cp s3://dev-terraform-config-cloud-resume/backend.conf ./iac-repo/environments/development
+
+      - name: Initialize Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init -backend-config=backend.conf
+        working-directory: ./iac-repo/environments/development
+
+      - name: Terraform Destroy
+        run: terraform destroy --auto-approve
+        working-directory: ./iac-repo/environments/development
+              
 
 
