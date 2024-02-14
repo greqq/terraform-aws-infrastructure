@@ -293,10 +293,10 @@ jobs:
 
         - name: Initialize Terraform
           run: terraform init -backend-config=backend.conf
-          working-directory: ./environments/development
+          working-directory: environments/development
 
         - name: Terraform Destroy
           run: terraform destroy --auto-approve
-          working-directory: ./environments/development
+          working-directory: environments/development
 
 
