@@ -74,25 +74,43 @@ jobs:
   
         - name: Get S3 Bucket Name from Terraform Outputs
           run: |
-            cd ./environments/development
             BUCKET_NAME=$(terraform-bin output -raw s3_bucket_name)
+            echo "::add-mask::$BUCKET_NAME"
             echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+          working-directory: ./environments/development
   
         # Get the CloudFront Distribution ID from Terraform outputs
         - name: Get CloudFront Distribution ID
-          run: echo "CLOUDFRONT_ID=$(terraform-bin output -raw cloudfront_distribution_id)" >> $GITHUB_ENV
+          run:  |
+            CLOUDFRONT_ID=$(terraform-bin output -raw cloudfront_distribution_id)
+            echo "::add-mask::$CLOUDFRONT_ID"
+            echo "CLOUDFRONT_ID=$CLOUDFRONT_ID" >> $GITHUB_ENV
           working-directory: ./environments/development
   
-         # Get the Get invoke API url from terraform
-        - name: Get Invoke API Url from Terraform
-          run: echo "PUBLIC_API_URL=$(terraform-bin output -raw dev_api_invoke_url)" >> $GITHUB_ENV
+         # Get the invoke API url from Terraform outputs
+        - name: Get Invoke API Url from Terraform outputs
+          run: |
+           PUBLIC_API_URL=$(terraform-bin output -raw dev_api_invoke_url)
+           echo "::add-mask::$PUBLIC_API_URL"
+           echo "PUBLIC_API_URL=$PUBLIC_API_URL" >> $GITHUB_ENV
           working-directory: ./environments/development
-  
+
+         # Get the lambda function name from Terraform outputs
+        - name: Get the lambda function name from Terraform outputs
+          run: |
+           LAMBDA_FUNCTION_NAME=$(terraform output -raw lambda_function_name)
+           echo "::add-mask::$LAMBDA_FUNCTION_NAME"
+           echo "LAMBDA_FUNCTION_NAME=$LAMBDA_FUNCTION_NAME" >> $GITHUB_ENV
+          working-directory: ./environments/development
+ 
           # Set NEXT_PUBLIC_API_URL using PUBLIC_API_URL
         - name: Set Next.js API URL
-          run: echo "NEXT_PUBLIC_API_URL=$PUBLIC_API_URL" >> $GITHUB_ENV
+          run: |
+            NEXT_PUBLIC_API_URL=$PUBLIC_API_URL
+            echo "::add-mask::NEXT_PUBLIC_API_URL"
+            echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" >> $GITHUB_ENV
           working-directory: ./environments/development
-        
+       
         # Run Next.js 
         - name: Set up Node.js
           uses: actions/setup-node@v4
@@ -139,8 +157,8 @@ jobs:
           working-directory: ./lambda-repo/increment_counter
   
         - name: Update Lambda function code
-          run: aws lambda update-function-code --function-name incrementCounterDev --zip-file fileb://lambda-repo/increment_counter/object.zip
-  
+          run: aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda-repo/increment_counter/object.zip
+        
         - name: Upload Website Files to S3
           run: |
             aws s3 sync ./out/ s3://$BUCKET_NAME/
@@ -154,7 +172,6 @@ jobs:
           run: |
             aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
   
-
   prod-build-and-deploy:
     needs: dev-build-and-deploy
     if: needs.dev-build-and-deploy.result == 'success'
@@ -225,16 +242,34 @@ jobs:
   
         # Get the CloudFront Distribution ID from Terraform outputs
         - name: Get CloudFront Distribution ID
-          run: echo "CLOUDFRONT_ID=$(terraform-bin output -raw cloudfront_distribution_id)" >> $GITHUB_ENV
+          run:  |
+            CLOUDFRONT_ID=$(terraform-bin output -raw cloudfront_distribution_id)
+            echo "::add-mask::$CLOUDFRONT_ID"
+            echo "CLOUDFRONT_ID=$CLOUDFRONT_ID" >> $GITHUB_ENV
           working-directory: ./environments/production
   
          # Get the Get invoke API url from terraform
         - name: Get Invoke API Url from Terraform
-          run: echo "PUBLIC_API_URL=$(terraform-bin output -raw dev_api_invoke_url)" >> $GITHUB_ENV
+          run: |
+           PUBLIC_API_URL=$(terraform-bin output -raw dev_api_invoke_url)
+           echo "::add-mask::$PUBLIC_API_URL"
+           echo "PUBLIC_API_URL=$PUBLIC_API_URL" >> $GITHUB_ENV
           working-directory: ./environments/production
-  
+
+         # Get the lambda function name from Terraform outputs
+        - name: Get the lambda function name from Terraform outputs
+          run: |
+           LAMBDA_FUNCTION_NAME=$(terraform output -raw lambda_function_name)
+           echo "::add-mask::$LAMBDA_FUNCTION_NAME"
+           echo "LAMBDA_FUNCTION_NAME=$LAMBDA_FUNCTION_NAME" >> $GITHUB_ENV
+          working-directory: ./environments/production
+
+          # Set NEXT_PUBLIC_API_URL using PUBLIC_API_URL
         - name: Set Next.js API URL
-          run: echo "NEXT_PUBLIC_API_URL=$PUBLIC_API_URL" >> $GITHUB_ENV
+          run: |
+            NEXT_PUBLIC_API_URL=$PUBLIC_API_URL
+            echo "::add-mask::NEXT_PUBLIC_API_URL"
+            echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" >> $GITHUB_ENV
           working-directory: ./environments/production
   
         # Run Next.js 
@@ -266,8 +301,8 @@ jobs:
           working-directory: ./lambda-repo/increment_counter
   
         - name: Update Lambda function code
-          run: aws lambda update-function-code --function-name incrementCounter --zip-file fileb://lambda-repo/increment_counter/object.zip
-  
+          run: aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda-repo/increment_counter/object.zip
+
         - name: Clear CDN Cache
           run: |
             aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
@@ -277,8 +312,8 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:    
-      # Checkout the Resume repository
-      - name: Checkout Resume Repository
+      # Checkout the IaC repository
+      - name: Checkout IaC Repository
         uses: actions/checkout@v4
         with:
           repository: greqq/terraform-aws-infrastructure
