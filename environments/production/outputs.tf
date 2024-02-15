@@ -24,3 +24,10 @@ output "dev_api_invoke_url" {
   value       = "https://${module.api_gateway.rest_api_id}.execute-api.${var.aws_region}.amazonaws.com/prod/${var.path_part}"
   sensitive   = true
 }
+
+output "lambda_function_name" {
+  description = "Name of the lambda function"
+  value       = module.lambda.lambda_function_name
+  sensitive   = true
+}
+

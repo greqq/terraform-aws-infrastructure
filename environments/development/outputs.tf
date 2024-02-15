@@ -25,3 +25,9 @@ output "dev_api_invoke_url" {
   sensitive   = true
 }
 
+output "lambda_function_name" {
+  description = "Name of the lambda function"
+  value       = module.lambda.lambda_function_name
+  sensitive   = true
+}
+
