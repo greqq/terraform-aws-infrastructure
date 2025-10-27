@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.11"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
 
   required_version = ">= 1.2.0"
@@ -16,10 +20,22 @@ provider "aws" {
   region = var.aws_region
 }
 
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}
+
 
 module "certificate" {
   source      = "../../modules/certificate"
   domain_name = var.domain_name
+}
+
+module "cloudflare_dns" {
+  source                         = "../../modules/cloudflare_dns"
+  cloudflare_zone_id             = var.cloudflare_zone_id
+  domain_name                    = var.domain_name
+  cloudfront_domain_name         = module.cloudfront.distribution_domain_name
+  certificate_validation_options = module.certificate.certificate_validation_options
 }
 
 module "s3" {

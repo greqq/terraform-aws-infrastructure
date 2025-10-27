@@ -10,6 +10,19 @@ variable "bucket_name" {
   sensitive   = true
 }
 
+# Cloudflare
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token for DNS management"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID for lukamasa.com"
+  type        = string
+  sensitive   = true
+}
+
 # cert
 variable "domain_name" {
   description = "The domain name for the ACM certificate"

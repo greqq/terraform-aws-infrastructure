@@ -8,6 +8,12 @@ output "cloudfront_distribution_id" {
   sensitive = true
 }
 
+output "cloudfront_domain_name" {
+  value       = module.cloudfront.distribution_domain_name
+  description = "The CloudFront domain name to use in DNS (e.g., Cloudflare CNAME)"
+  sensitive   = false
+}
+
 output "dynamodb_table_name" {
   value     = module.dynamodb.visitor_counter_table_name
   sensitive = true
